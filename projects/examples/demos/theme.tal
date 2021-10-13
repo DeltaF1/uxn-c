@@ -13,7 +13,9 @@
 
 |00 @System [ &vector $2 &pad   $6 &r      $2 &g     $2 &b     $2 ]
 |20 @Screen [ &vector $2 &width $2 &height $2 &pad   $2 &x     $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
+|80 @Controller [ &vector $2 &button $1 &key $1 ]
 |90 @Mouse  [ &vector $2 &x     $2 &y      $2 &state $1 &wheel $1 ]
+|a0 @File		[ &vector $2 &success $2 &offset-high $2 &offset-low $2 &name $2 &length $2 &load $2 &save $2 ]
 
 ( variables )
 
@@ -38,10 +40,15 @@
 
 |0100 ( -> )
 
+  ;theme-txt .File/name DEO2
+
 	( theme ) 
 	#027f .System/r DEO2 
 	#04e7 .System/g DEO2 
 	#06c4 .System/b DEO2
+
+	( If a .theme file exists then read it in )
+	;load-theme JSR2
 
 	( vectors ) 
 	;on-mouse .Mouse/vector DEO2
@@ -54,10 +61,10 @@
 	.Screen/width DEI2 2// .window/w LDZ2 2// SUB2 .window/x1 STZ2
 	.Screen/height DEI2 2// .window/h LDZ2 2// SUB2 .window/y1 STZ2
 
-	#01 .theme/r1 STZ #02 .theme/g1 STZ #03 .theme/b1 STZ
-	#04 .theme/r2 STZ #06 .theme/g2 STZ #07 .theme/b2 STZ
-	#0a .theme/r3 STZ #09 .theme/g3 STZ #08 .theme/b3 STZ
-	#0c .theme/r4 STZ #0b .theme/g4 STZ #0d .theme/b4 STZ
+	( #01 .theme/r1 STZ #02 .theme/g1 STZ #03 .theme/b1 STZ )
+	( #04 .theme/r2 STZ #06 .theme/g2 STZ #07 .theme/b2 STZ )
+	( #0a .theme/r3 STZ #09 .theme/g3 STZ #08 .theme/b3 STZ )
+	( #0c .theme/r4 STZ #0b .theme/g4 STZ #0d .theme/b4 STZ )
 
 	( find screen center )
 	.Screen/width DEI2 2// .center/x STZ2
@@ -121,6 +128,73 @@ BRK
 	#0d DEI #f0 AND .theme/b4 LDZ ADD #0d DEO
 
 RTN
+
+@theme-txt ".theme $1
+
+@load-theme ( -- )
+
+  #0006 .File/length DEO2
+  ;theme-raw .File/load DEO2
+
+  .File/success DEI2 #0006 NEQ2 ,&ignore JCN
+    ;theme-raw/r LDA2 .System/r DEO2
+    ;theme-raw/g LDA2 .System/g DEO2
+    ;theme-raw/b LDA2 .System/b DEO2
+
+		( If we updated the raw theme bytes then move them into the expected parts )
+		,raw-to-parts JMP
+    &ignore
+RTN
+
+( Copy the raw 6 bytes into the r1/r2/r3 etc. that is expected )
+@raw-to-parts ( -- )
+	;theme-raw/r LDA2
+		#0f OVR AND ;theme/r4 STA
+		#f0 AND #04 SFT			;theme/r3 STA
+		#0f OVR AND ;theme/r2 STA
+		#f0 AND	#04 SFT		;theme/r1 STA
+	;theme-raw/g LDA2
+		#0f OVR AND ;theme/g4 STA
+		#f0 AND	#04 SFT		;theme/g3 STA
+		#0f OVR AND ;theme/g2 STA
+		#f0 AND	#04 SFT		;theme/g1 STA
+	;theme-raw/b LDA2
+		#0f OVR AND ;theme/b4 STA
+		#f0 AND	#04 SFT		;theme/b3 STA
+		#0f OVR AND ;theme/b2 STA
+		#f0 AND	#04 SFT		;theme/b1 STA
+RTN
+
+@save-theme
+	,parts-to-raw JSR
+  #0006 .File/length DEO2
+	;theme-raw .File/save DEO2
+RTN
+
+( Copy the components into the raw 6 bytes )
+@parts-to-raw ( -- )
+	;theme/r1 LDA2 ( Fetch r1 and r2 )
+		SWP #40 SFT SWP ORA ( r1|r2 )
+	;theme/r3 LDA2 ( Fetch r3 and r4 )
+		SWP #40 SFT SWP ORA ( r3|r4 )
+		;theme-raw/r STA2
+
+	;theme/g1 LDA2
+		SWP #40 SFT SWP ORA
+	;theme/g3 LDA2
+		SWP #40 SFT SWP ORA
+		;theme-raw/g STA2
+
+	;theme/b1 LDA2
+		SWP #40 SFT SWP ORA
+	;theme/b3 LDA2
+		SWP #40 SFT SWP ORA
+		;theme-raw/b STA2
+RTN
+
+@theme-raw
+	&r $2 &g $2 &b $2
+
 
 @draw-background ( -- )
 	
