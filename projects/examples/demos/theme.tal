@@ -42,16 +42,9 @@
 
   ;theme-txt .File/name DEO2
 
-	( theme ) 
-	#027f .System/r DEO2 
-	#04e7 .System/g DEO2 
-	#06c4 .System/b DEO2
-
-	( If a .theme file exists then read it in )
-	;load-theme JSR2
-
 	( vectors ) 
 	;on-mouse .Mouse/vector DEO2
+	;on-controller .Controller/vector DEO2
 	
 	( size window )
 	#00b0 .window/w STZ2
@@ -61,10 +54,14 @@
 	.Screen/width DEI2 2// .window/w LDZ2 2// SUB2 .window/x1 STZ2
 	.Screen/height DEI2 2// .window/h LDZ2 2// SUB2 .window/y1 STZ2
 
-	( #01 .theme/r1 STZ #02 .theme/g1 STZ #03 .theme/b1 STZ )
-	( #04 .theme/r2 STZ #06 .theme/g2 STZ #07 .theme/b2 STZ )
-	( #0a .theme/r3 STZ #09 .theme/g3 STZ #08 .theme/b3 STZ )
-	( #0c .theme/r4 STZ #0b .theme/g4 STZ #0d .theme/b4 STZ )
+	( fallback theme )
+	#01 .theme/r1 STZ #02 .theme/g1 STZ #03 .theme/b1 STZ
+	#04 .theme/r2 STZ #06 .theme/g2 STZ #07 .theme/b2 STZ
+	#0a .theme/r3 STZ #09 .theme/g3 STZ #08 .theme/b3 STZ
+	#0c .theme/r4 STZ #0b .theme/g4 STZ #0d .theme/b4 STZ
+
+	( If a .theme file exists then read it in )
+	;load-theme JSR2
 
 	( find screen center )
 	.Screen/width DEI2 2// .center/x STZ2
@@ -110,6 +107,13 @@ BRK
 	;draw-background JSR2
 	;draw-window JSR2
 
+BRK
+
+@on-controller
+	.Controller/button DEI #01 AND #01 JCN [ BRK ]
+	.Controller/key DEI LIT 's NEQ ,&no-save JCN
+		;save-theme JSR2
+	&no-save
 BRK
 
 @update-theme ( -- )
@@ -174,21 +178,21 @@ RTN
 ( Copy the components into the raw 6 bytes )
 @parts-to-raw ( -- )
 	;theme/r1 LDA2 ( Fetch r1 and r2 )
-		SWP #40 SFT SWP ORA ( r1|r2 )
+		SWP #40 SFT ORA ( r1|r2 )
 	;theme/r3 LDA2 ( Fetch r3 and r4 )
-		SWP #40 SFT SWP ORA ( r3|r4 )
+		SWP #40 SFT ORA ( r3|r4 )
 		;theme-raw/r STA2
 
 	;theme/g1 LDA2
-		SWP #40 SFT SWP ORA
+		SWP #40 SFT ORA
 	;theme/g3 LDA2
-		SWP #40 SFT SWP ORA
+		SWP #40 SFT ORA
 		;theme-raw/g STA2
 
 	;theme/b1 LDA2
-		SWP #40 SFT SWP ORA
+		SWP #40 SFT ORA
 	;theme/b3 LDA2
-		SWP #40 SFT SWP ORA
+		SWP #40 SFT ORA
 		;theme-raw/b STA2
 RTN
 
